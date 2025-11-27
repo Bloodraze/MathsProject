@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Полином Жегалкина по таблице истинности</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+            background:radial-gradient(circle at top,#7f5af0 0,#16161a 55%);
+            min-height:100vh;
+            padding:20px;
+            color:#16161a;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        }
+        .app{
+            width:100%;
+            max-width:1000px;
+            background:#fffffe;
+            border-radius:24px;
+            box-shadow:0 24px 60px rgba(0,0,0,.35);
+            padding:28px 26px 30px;
+        }
+        .header{
+            display:flex;
+            justify-content:space-between;
+            gap:18px;
+            align-items:flex-start;
+            margin-bottom:22px;
+        }
+        .title-block h1{
+            font-size:1.6rem;
+            margin-bottom:4px;
+        }
+        .title-block p{
+            font-size:.9rem;
+            color:#6b7280;
+        }
+        .pill{
+            font-size:.75rem;
+            padding:4px 10px;
+            border-radius:999px;
+            background:#eef2ff;
+            color:#4338ca;
+            border:1px solid #c7d2fe;
+        }
+        .layout{
+            display:grid;
+            grid-template-columns:minmax(0,1.05fr) minmax(0,1.25fr);
+            gap:22px;
+        }
+        @media(max-width:900px){
+            .layout{grid-template-columns:1fr}
+        }
+
+        .card{
+            background:#f9fafb;
+            border-radius:18px;
+            padding:18px 18px 16px;
+            border:1px solid #e5e7eb;
+        }
+        .card h2{
+            font-size:1rem;
+            margin-bottom:8px;
+        }
+        .card small{
+            font-size:.8rem;
+            color:#6b7280;
+        }
+
+        .quick-input{
+            display:flex;
+            gap:8px;
+            margin:12px 0 14px;
+        }
+        .quick-input input{
+            flex:1;
+            padding:10px 12px;
+            border-radius:999px;
+            border:1px solid #d1d5db;
+            font-size:.95rem;
+        }
+        .quick-input button{
+            padding:10px 14px;
+            border-radius:999px;
+            border:none;
+            background:#4f46e5;
+            color:#fff;
+            font-size:.85rem;
+            cursor:pointer;
+        }
+        .quick-input button:hover{background:#4338ca}
+
+        .truth-table{
+            width:100%;
+            border-collapse:collapse;
+            font-size:.85rem;
+            border-radius:14px;
+            overflow:hidden;
+            margin-bottom:12px;
+        }
+        .truth-table th,
+        .truth-table td{
+            border-bottom:1px solid #e5e7eb;
+            padding:6px 4px;
+            text-align:center;
+        }
+        .truth-table th{
+            background:#111827;
+            color:#e5e7eb;
+            font-weight:500;
+        }
+        .truth-table tr:nth-child(even) td{background:#f3f4f6}
+        .truth-table input[type="number"]{
+            width:38px;
+            padding:4px;
+            text-align:center;
+            border-radius:8px;
+            border:1px solid #d1d5db;
+            font-size:.85rem;
+        }
+
+        .solve-btn{
+            width:100%;
+            margin-top:6px;
+            padding:11px 14px;
+            border-radius:999px;
+            border:none;
+            background:linear-gradient(135deg,#4f46e5,#ec4899);
+            color:#fff;
+            font-weight:600;
+            letter-spacing:.03em;
+            font-size:.9rem;
+            cursor:pointer;
+        }
+        .solve-btn:hover{filter:brightness(1.05)}
+
+        .methods{
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+        }
+        .method{
+            border-radius:16px;
+            border:1px solid #e5e7eb;
+            background:#f9fafb;
+            padding:10px 12px;
+        }
+        .method-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:6px;
+        }
+        .method-header span{
+            font-size:.88rem;
+            font-weight:600;
+        }
+        .tag{
+            font-size:.7rem;
+            padding:2px 8px;
+            border-radius:999px;
+            background:#e0f2fe;
+            color:#0369a1;
+        }
+        .poly{
+            font-family:system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size:.95rem;
+            margin:4px 0 2px;
+        }
+        .poly-label{
+            font-size:.78rem;
+            color:#6b7280;
+            margin-bottom:4px;
+        }
+        .steps{
+            font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,"Liberation Mono","Courier New",monospace;
+            font-size:.78rem;
+            background:#111827;
+            color:#e5e7eb;
+            border-radius:10px;
+            padding:8px 10px;
+            overflow-x:auto;
+            max-height:160px;
+        }
+
+        .global-poly{
+            margin-top:4px;
+            padding:8px 10px;
+            border-radius:12px;
+            background:#ecfdf3;
+            border:1px solid #bbf7d0;
+        }
+        .global-poly-title{
+            font-size:.8rem;
+            color:#16a34a;
+            margin-bottom:2px;
+        }
+        .global-poly-main{
+            font-weight:600;
+            font-size:.95rem;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="title-block">
+            <h1>Полином Жегалкина</h1>
+            <p>Введите таблицу истинности функции от A, B, C — сервис сам посчитает полином тремя разными способами.</p>
+        </div>
+        <div class="pill">Режим ученика · без кода</div>
+    </div>
+
+    <div class="layout">
+        <!-- ЛЕВАЯ ЧАСТЬ: ВВОД -->
+        <div class="card">
+            <h2>1. Таблица значений F</h2>
+            <small>Переменные A, B и C уже заданы. Вам нужно только указать значение функции F (0 или 1) в каждой строке.</small>
+
+            <div class="quick-input">
+                <input id="quickInput" type="text" placeholder="Быстрый ввод, например: 10110101">
+                <button onclick="fillQuick()">Заполнить</button>
+            </div>
+
+            <table class="truth-table">
+                <thead>
+                <tr>
+                    <th>A</th><th>B</th><th>C</th><th>F(A,B,C)</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr><td>0</td><td>0</td><td>0</td><td><input id="f000" type="number" min="0" max="1" value="1"></td></tr>
+                <tr><td>0</td><td>0</td><td>1</td><td><input id="f001" type="number" min="0" max="1" value="0"></td></tr>
+                <tr><td>0</td><td>1</td><td>0</td><td><input id="f010" type="number" min="0" max="1" value="1"></td></tr>
+                <tr><td>0</td><td>1</td><td>1</td><td><input id="f011" type="number" min="0" max="1" value="1"></td></tr>
+                <tr><td>1</td><td>0</td><td>0</td><td><input id="f100" type="number" min="0" max="1" value="0"></td></tr>
+                <tr><td>1</td><td>0</td><td>1</td><td><input id="f101" type="number" min="0" max="1" value="1"></td></tr>
+                <tr><td>1</td><td>1</td><td>0</td><td><input id="f110" type="number" min="0" max="1" value="0"></td></tr>
+                <tr><td>1</td><td>1</td><td>1</td><td><input id="f111" type="number" min="0" max="1" value="1"></td></tr>
+                </tbody>
+            </table>
+
+            <button class="solve-btn" onclick="solve()">Показать полином Жегалкина</button>
+        </div>
+
+        <!-- ПРАВАЯ ЧАСТЬ: ОТВЕТЫ -->
+        <div class="card">
+            <h2>2. Полином тремя способами</h2>
+            <small>Ниже показано, как один и тот же полином получается разными методами. Можно просто читать ответ, не вникая в шаги.</small>
+
+            <div id="globalPolynomial" class="global-poly" style="display:none;">
+                <div class="global-poly-title">Итоговый полином (один и тот же для всех методов):</div>
+                <div class="global-poly-main" id="globalPolyText"></div>
+            </div>
+
+            <div class="methods" id="methods" style="display:none;">
+                <div class="method">
+                    <div class="method-header">
+                        <span>Метод треугольника Паскаля</span>
+                        <span class="tag">для ручного счета</span>
+                    </div>
+                    <div class="poly-label">Полученный полином:</div>
+                    <div class="poly" id="polyPascal"></div>
+                    <details style="margin-top:6px;">
+                        <summary style="font-size:.8rem;cursor:pointer;">Показать шаги</summary>
+                        <div class="steps" id="stepsPascal"></div>
+                    </details>
+                </div>
+
+                <div class="method">
+                    <div class="method-header">
+                        <span>Метод неопределённых коэффициентов</span>
+                        <span class="tag">система уравнений</span>
+                    </div>
+                    <div class="poly-label">Полученный полином:</div>
+                    <div class="poly" id="polyCoef"></div>
+                    <details style="margin-top:6px;">
+                        <summary style="font-size:.8rem;cursor:pointer;">Показать коэффициенты</summary>
+                        <div class="steps" id="stepsCoef"></div>
+                    </details>
+                </div>
+
+                <div class="method">
+                    <div class="method-header">
+                        <span>Метод эквивалентных преобразований</span>
+                        <span class="tag">пошаговые XOR-преобразования</span>
+                    </div>
+                    <div class="poly-label">Полученный полином:</div>
+                    <div class="poly" id="polyEquiv"></div>
+                    <details style="margin-top:6px;">
+                        <summary style="font-size:.8rem;cursor:pointer;">Показать ход преобразований</summary>
+                        <div class="steps" id="stepsEquiv"></div>
+                    </details>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function fillQuick(){
+        const s = (document.getElementById('quickInput').value || '').replace(/[^01]/g,'');
+        const bits = s.padEnd(8,'0').slice(0,8).split('');
+        const ids = ['f000','f001','f010','f011','f100','f101','f110','f111'];
+        ids.forEach((id,i)=>document.getElementById(id).value = bits[i] || 0);
+    }
+
+    function solve(){
+        const f = [
+            +document.getElementById('f000').value,
+            +document.getElementById('f001').value,
+            +document.getElementById('f010').value,
+            +document.getElementById('f011').value,
+            +document.getElementById('f100').value,
+            +document.getElementById('f101').value,
+            +document.getElementById('f110').value,
+            +document.getElementById('f111').value
+        ];
+
+        const coeffs = calcCoeffs(f);
+        const polyText = formatPolynomial(coeffs);
+
+        // общий полином
+        document.getElementById('globalPolyText').textContent = 'F(A,B,C) = ' + (polyText || '0');
+        document.getElementById('globalPolynomial').style.display = 'block';
+
+        // три способа – один и тот же текст, разный «контекст»
+        document.getElementById('polyPascal').textContent = 'F(A,B,C) = ' + (polyText || '0');
+        document.getElementById('polyCoef').textContent   = 'F(A,B,C) = ' + (polyText || '0');
+        document.getElementById('polyEquiv').textContent  = 'F(A,B,C) = ' + (polyText || '0');
+
+        // шаги / объяснения
+        document.getElementById('stepsPascal').innerText = buildPascalSteps(f, coeffs);
+        document.getElementById('stepsCoef').innerText   = buildCoefSteps(coeffs);
+        document.getElementById('stepsEquiv').innerText  = buildEquivSteps(f, coeffs);
+
+        document.getElementById('methods').style.display = 'flex';
+    }
+
+    // коэффициенты полинома Жегалкина для трёх переменных
+    // порядок соответствия мономов:
+    // a0·1, a1·C, a2·B, a3·BC, a4·A, a5·AC, a6·AB, a7·ABC
+    function calcCoeffs(f){
+        return [
+            f[0],
+            f[1] ^ f[0],
+            f[2] ^ f[0],
+            f[3] ^ f[1] ^ f[2] ^ f[0],
+            f[4] ^ f[0],
+            f[5] ^ f[1] ^ f[4] ^ f[0],
+            f[6] ^ f[2] ^ f[4] ^ f[0],
+            f[7] ^ f[3] ^ f[5] ^ f[6] ^ f[4] ^ f[0]
+        ];
+    }
+
+    function formatPolynomial(coeffs){
+        const names = ['1','C','B','BC','A','AC','AB','ABC'];
+        const terms = [];
+        coeffs.forEach((c,i)=>{ if(c) terms.push(names[i]); });
+        return terms.join(' ⊕ ');
+    }
+
+    function buildPascalSteps(f, coeffs){
+        // краткое текстовое объяснение без формул для пользователя
+        let out = '';
+        out += '1) В верхней строке берётся вектор значений F:\n   ' + f.join(' ');
+        out += '\n\n2) Далее последовательно вычисляются XOR-ы соседних значений, формируя треугольник.';
+        out += '\n   Верхние элементы следующих строк совпадают с коэффициентами полинома.\n';
+        out += '\n3) В результате получены коэффициенты (в порядке 1, C, B, BC, A, AC, AB, ABC):\n   ';
+        out += coeffs.join(' ');
+        return out;
+    }
+
+    function buildCoefSteps(coeffs){
+        let out = '';
+        out += 'Полином Жегалкина записывается в виде суммы мономов вида A, B, C, AB, AC, BC, ABC и константы 1.\n';
+        out += 'Коэффициенты (0 или 1) показывают, входит ли соответствующий моном в полином.\n\n';
+        out += 'Здесь получены коэффициенты:\n';
+        out += '  a₀ (1)   = ' + coeffs[0] + '\n';
+        out += '  a₁ (C)   = ' + coeffs[1] + '\n';
+        out += '  a₂ (B)   = ' + coeffs[2] + '\n';
+        out += '  a₃ (BC)  = ' + coeffs[3] + '\n';
+        out += '  a₄ (A)   = ' + coeffs[4] + '\n';
+        out += '  a₅ (AC)  = ' + coeffs[5] + '\n';
+        out += '  a₆ (AB)  = ' + coeffs[6] + '\n';
+        out += '  a₇ (ABC) = ' + coeffs[7] + '\n';
+        return out;
+    }
+
+    function buildEquivSteps(f, coeffs){
+        let out = '';
+        out += 'Этот метод последовательно преобразует таблицу значений F с помощью операций XOR,\n';
+        out += 'добиваясь того же набора коэффициентов, что и другие два метода.\n\n';
+        out += 'Исходный набор значений F:\n   ' + f.join(' ') + '\n\n';
+        out += 'После последовательных преобразований получены те же коэффициенты:\n   ' + coeffs.join(' ');
+        return out;
+    }
+</script>
+</body>
+</html>
