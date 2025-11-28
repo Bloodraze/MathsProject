@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Полином Жегалкина ✓</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial; max-width: 900px; margin: 40px auto; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .container { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; backdrop-filter: blur(10px); }
+        h1 { text-align: center; font-size: 2.2em; margin-bottom: 10px; }
+        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: none; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        textarea { height: 90px; resize: vertical; }
+        button { padding: 12px 24px; margin: 8px 4px 8px 0; background: #00d4aa; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; transition: all 0.3s; }
+        button:hover { background: #00b894; transform: translateY(-2px); }
+        button:disabled { background: #636e72; cursor: not-allowed; transform: none; }
+        #output { background: rgba(0,0,0,0.3); color: #fff; padding: 20px; border-radius: 10px; white-space: pre-wrap; font-family: monospace; font-size: 14px; max-height: 400px; overflow-y: auto; margin-top: 20px; }
+        .status { text-align: center; padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .loading { background: rgba(255,193,7,0.3); }
+        .ready { background: rgba(40,167,69,0.3); }
+        .example-btn { background: #fdcb6e; }
+        .example-btn:hover { background: #f39c12; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔢 Полином Жегалкина</h1>
+        <p style="text-align: center; opacity: 0.9;">Калькулятор булевых функций методом треугольника Паскаля</p>
+        
+        <div>
+            <label>Переменные (1-5):</label>
+            <input type="number" id="n_vars" min="1" max="5" value="2">
+        </div>
+        
+        <label>Функция (and, or, not):</label>
+        <textarea id="func_input" placeholder="Примеры:
+x1 and x2
+not x1 or x2  
+(x1 and x2) or not x3
+x1 and (not x2 or x3)">x1 and x2</textarea>
+        
+        <div>
+            <button onclick="compute()" id="computeBtn">🚀 Вычислить полином</button>
+            <button class="example-btn" onclick="loadExample(0)">Пример 1</button>
+            <button class="example-btn" onclick="loadExample(1)">Пример 2</button>
+            <button class="example-btn" onclick="loadExample(2)">Пример 3</button>
+            <button onclick="showHelp()">ℹ️ Помощь</button>
+        </div>
+        
+        <div id="status" class="status">Загрузка Python...</div>
+        <div id="output"></div>
+    </div>
+
+    <script type="text/javascript">
+        let pyodideReady = false;
+        let pyodide;
+        
+        const examples = [
+            {n: 3, func: "x1 and x2 and x3"},
+            {n: 2, func: "x1 or x2"},
+            {n: 1, func: "not x1"},
+            {n: 3, func: "(x1 and x2) or (x1 and x3) or (x2 and x3)"},
+            {n: 4, func: "x1 and (not x2 or x3) and x4"}
+        ];
+
+        async function initPyodide() {
+            try {
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.1/full/"
+                });
+                pyodideReady = true;
+                document.getElementById('status').textContent = '✅ Python готов!';
+                document.getElementById('status').className = 'status ready';
+                document.getElementById('computeBtn').disabled = false;
+            } catch (error) {
+                document.getElementById('status').textContent = '❌ Ошибка загрузки: ' + error.message;
+                document.getElementById('status').className = 'status';
+            }
+        }
+
+        async function compute() {
+        if (!pyodideReady) {
+            document.getElementById('output').textContent = 'Python еще загружается...';
+            return;
+        }
+        
+        const n = parseInt(document.getElementById('n_vars').value);
+        const func_str = document.getElementById('func_input').value.trim();
+        
+        if (!func_str) {
+            document.getElementById('output').textContent = 'Введите функцию!';
+            return;
+        }
+
+        document.getElementById('status').textContent = 'Вычисляем...';
+        document.getElementById('status').className = 'status loading';
+        
+        try {
+            const code = `
+    import sys
+    import io
+
+    output = io.StringIO()
+    sys.stdout = output
+
+    def get_truth_table(func, n):
+        truth_table = []
+        for i in range(2**n):
+            binary = format(i, f'0{n}b')
+            args = [int(bit) for bit in binary]
+            value = func(*args)
+            truth_table.append((args, value))
+        return truth_table
+
+    def triangle_method(truth_table):
+        n = len(truth_table[0][0]) 
+        values = [row[1] for row in truth_table]
+        triangle = [values.copy()]
+        for i in range(len(values) - 1):
+            new_row = []
+            for j in range(len(triangle[i]) - 1):
+                new_row.append(triangle[i][j] ^ triangle[i][j + 1])
+            triangle.append(new_row)
+        coefficients = [row[0] for row in triangle]
+        return coefficients
+
+    def build_zhegalkin_polynomial(coefficients, n):
+        terms = []
+        for i, coef in enumerate(coefficients):
+            if coef == 1:
+                binary = format(i, f'0{n}b')
+                monom_terms = []
+                for j, bit in enumerate(binary):
+                    if bit == '1':
+                        monom_terms.append(f"x{j+1}")
+                if not monom_terms:
+                    terms.append("1")
+                else:
+                    terms.append(" ∧ ".join(monom_terms))
+        if not terms:
+            return "0"
+        return " ⊕ ".join(terms)
+
+    def parse_boolean_function(func_str, n):
+        namespace = {}
+        def AND(a, b): return a and b
+        def OR(a, b): return a or b
+        def NOT(a): return 1 if not a else 0
+        namespace.update({'and': AND, 'AND': AND, 'or': OR, 'OR': OR, 'not': NOT, 'NOT': NOT})
+        for i in range(1, n + 1):
+            namespace[f'x{i}'] = None
+        def boolean_func(*args):
+            for i in range(n):
+                namespace[f'x{i+1}'] = args[i]
+            try:
+                result = eval(func_str, {"__builtins__": {}}, namespace)
+                return 1 if result else 0
+            except:
+                return 0
+        return boolean_func
+
+    func = parse_boolean_function(r'${func_str.replace(/'/g, "\\'")}', ${n})
+    truth_table = get_truth_table(func, ${n})
+    coefficients = triangle_method(truth_table)
+    poly = build_zhegalkin_polynomial(coefficients, ${n})
+
+    print("📊 Функция:", r'${func_str}')
+    print("🎯 Полином Жегалкина:", poly)
+    print("\\n📋 Таблица истинности:")
+    print("-" * 40)
+    for args, value in truth_table:
+        print(f"{args} → {value}")
+
+    sys.stdout = sys.__stdout__
+    output.getvalue()
+    `;
+
+            let result = await pyodide.runPythonAsync(code);
+            document.getElementById('output').textContent = result.trim();
+        } catch (error) {
+            document.getElementById('output').textContent = `❌ Ошибка: ${error.message}\n\nПроверьте синтаксис функции!`;
+        }
+        
+        document.getElementById('status').textContent = 'Готово!';
+        document.getElementById('status').className = 'status ready';
+    }
+
+        function loadExample(idx) {
+            const ex = examples[idx];
+            document.getElementById('n_vars').value = ex.n;
+            document.getElementById('func_input').value = ex.func;
+        }
+
+        function showHelp() {
+            document.getElementById('output').textContent = `📖 Справка по синтаксису:
+
+Операции:
+• and / AND - конъюнкция (И)
+• or / OR  - дизъюнкция (ИЛИ)  
+• not / NOT - отрицание (НЕ)
+
+Переменные: x1, x2, x3, x4, x5
+
+Примеры:
+1. x1 and x2 and x3                    → x1∧x2∧x3
+2. x1 or x2                            → x1⊕x2⊕1  
+3. not x1                              → x1⊕1
+4. (x1 and x2) or (not x3)             → x1∧x2⊕x3⊕x1∧x2∧x3
+5. x1 xor x2 = (x1 and not x2) or (not x1 and x2)
+
+Скобки обязательны для порядка операций!
+Макс. 5 переменных (32 строки).`;
+        }
+
+        // Запуск
+        initPyodide();
+    </script>
+</body>
+</html>
